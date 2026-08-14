@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Secrets
+.env
+
+# Generated run reports (keep the directory, ignore the CSVs)
+reports/*.csv
+
+images/*

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fon-image-cleaner"
+version = "0.1.0"
+description = "Standalone CLI tools to download, clean (AI background removal), and re-upload catalog images via Cloudflare R2"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.34",
+    "rembg>=2.0.59",
+    "Pillow>=10.3",
+    # Used directly by the non-AI --mode edge-background border flood-fill
+    # (both already ship transitively via rembg, but are declared explicitly
+    # since fon_image_cleaner.background imports them directly).
+    "numpy>=1.26",
+    "scipy>=1.14",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
