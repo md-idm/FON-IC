@@ -256,13 +256,30 @@ Behavior:
   is created **once** for the whole run and reused for every image — never
   recreated per image.
 - **Input files are never modified** — they are only opened for reading.
+- **Fully recursive**: `--input` is scanned at any nesting depth
+  (`Path.rglob`), extension matching is case-insensitive (`IMAGE.JPG`,
+  `photo.WebP`, ... all count), and every discovered file's path *relative
+  to `--input`* is reproduced under `--output` unchanged — directory
+  structure is never flattened, and files with the same name in different
+  subdirectories (e.g. `hooks/1.jpg` and `reels/1.jpg`) never collide.
+  `--limit N` is applied to the file list sorted by full path (equivalent to
+  sorting by path relative to `--input`, since they share that prefix) — a
+  deterministic "first N", not directory-walk or filesystem order.
+- **`--output` inside `--input` is rejected outright** (as is `--output`
+  equal to `--input`), with a clear error and no files touched. Nesting
+  `--output` under `--input` would let recursive discovery pick up files
+  this run just created — or leftovers from a previous run — as if they
+  were new source images; rejecting the configuration is simpler and safer
+  than trying to filter the output tree out of discovery. Point `--output`
+  at a directory outside of `--input`.
 - **Resume-safe**: before processing each image, the expected destination
   path is computed (honoring `--format`), and if it already exists the image
   is skipped (`status=skipped`, `error=output_exists` in the CSV report)
   **without ever opening the source file or invoking the segmentation
-  model** — a restarted run never redoes already-completed work. `--force`
-  overrides this and regenerates/overwrites existing output. If every image
-  in a run already has an output, the rembg session is never created at all.
+  model** — a restarted run never redoes already-completed work, at any
+  nesting depth. `--force` overrides this and regenerates/overwrites
+  existing output. If every image in a run already has an output, the
+  rembg session is never created at all.
 - Per-image failures are isolated and recorded; the batch continues.
 - If background removal leaves no visible subject, the image is still saved
   but flagged with status `needs_review` so it can be checked by hand.

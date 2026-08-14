@@ -343,9 +343,49 @@ def build_output_image(
 
 
 def discover_images(input_dir: Path) -> List[Path]:
+    """Recursively find every supported image under `input_dir`, at any
+    nesting depth, matching extensions case-insensitively (`.JPG`, `.WebP`,
+    etc. all count). Non-image files (`.txt`, `.csv`, `.json`, `.db`,
+    `.pdf`, ...) are ignored regardless of location.
+
+    Returned in sorted order by full path, which -- since every path shares
+    the `input_dir` prefix -- is equivalent to sorting by path relative to
+    `input_dir`. This is the ordering `--limit` is applied against in
+    `run_process`, so which N files "the first N" means is deterministic
+    and stable across runs for an unchanged directory tree.
+    """
     return sorted(
         p for p in input_dir.rglob("*") if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
     )
+
+
+def _validate_input_output_dirs(input_dir: Path, output_dir: Path) -> None:
+    """Refuse configurations where writing to `output_dir` could feed back
+    into `input_dir`'s own recursive discovery: the exact same directory,
+    or an `--output` nested inside `--input`.
+
+    Rejecting outright (rather than trying to filter the output tree out of
+    discovery) is the safest and simplest option: `discover_images` stays a
+    single, simple `rglob` with no special-casing, and there is no way for
+    a file written by this run -- or left over from a previous run under
+    `--output` -- to ever be silently picked back up as a new source image.
+    """
+    resolved_input = input_dir.resolve()
+    resolved_output = output_dir.resolve()
+
+    if resolved_output == resolved_input:
+        raise ValueError(
+            f"--input and --output resolve to the same directory ({resolved_input}); "
+            "refusing to process images in place."
+        )
+    if resolved_input in resolved_output.parents:
+        raise ValueError(
+            f"--output ({resolved_output}) is inside --input ({resolved_input}). "
+            "Recursive discovery would then also scan whatever --output contains "
+            "(including files this run just created, or leftovers from a previous "
+            "run) as if they were new source images. Choose an --output directory "
+            "outside of --input."
+        )
 
 
 def resolve_output_suffix(source_path: Path, output_format: str) -> str:
@@ -466,6 +506,7 @@ def run_process(
 
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
+    _validate_input_output_dirs(input_dir, output_dir)
 
     files = discover_images(input_dir)
     if limit is not None:

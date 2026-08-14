@@ -151,20 +151,24 @@ def _run_compare(args) -> int:
     def on_progress(model_name, result):
         print(f"[{model_name}] [{result.status}] {result.source} -> {result.destination}")
 
-    results_by_model = run_compare_models(
-        input_dir=Path(args.input),
-        output_dir=Path(args.output),
-        limit=limit,
-        canvas_size=args.size,
-        padding_ratio=args.padding,
-        quality=args.quality,
-        workers=args.workers,
-        force=args.force,
-        output_format=args.format,
-        post_process_mask=args.post_process_mask,
-        alpha_matting=args.alpha_matting,
-        progress_cb=on_progress,
-    )
+    try:
+        results_by_model = run_compare_models(
+            input_dir=Path(args.input),
+            output_dir=Path(args.output),
+            limit=limit,
+            canvas_size=args.size,
+            padding_ratio=args.padding,
+            quality=args.quality,
+            workers=args.workers,
+            force=args.force,
+            output_format=args.format,
+            post_process_mask=args.post_process_mask,
+            alpha_matting=args.alpha_matting,
+            progress_cb=on_progress,
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     any_failed = False
     for model_name, results in results_by_model.items():
@@ -194,25 +198,29 @@ def main(argv=None) -> int:
     def on_progress(result):
         print(f"[{result.status}] {result.source} -> {result.destination}")
 
-    results = run_process(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        canvas_size=args.size,
-        padding_ratio=args.padding,
-        quality=args.quality,
-        workers=args.workers,
-        limit=args.limit,
-        force=args.force,
-        output_format=args.format,
-        mode=args.mode,
-        model=args.model,
-        post_process_mask=args.post_process_mask,
-        alpha_matting=args.alpha_matting,
-        background_tolerance=args.background_tolerance,
-        edge_sample_width=args.edge_sample_width,
-        save_mask=args.save_mask,
-        progress_cb=on_progress,
-    )
+    try:
+        results = run_process(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            canvas_size=args.size,
+            padding_ratio=args.padding,
+            quality=args.quality,
+            workers=args.workers,
+            limit=args.limit,
+            force=args.force,
+            output_format=args.format,
+            mode=args.mode,
+            model=args.model,
+            post_process_mask=args.post_process_mask,
+            alpha_matting=args.alpha_matting,
+            background_tolerance=args.background_tolerance,
+            edge_sample_width=args.edge_sample_width,
+            save_mask=args.save_mask,
+            progress_cb=on_progress,
+        )
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     report_path = write_report("background", results)
 
